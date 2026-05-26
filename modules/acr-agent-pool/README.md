@@ -48,10 +48,12 @@ Workflow drop-in: [`container-build.yml`](https://github.com/martinopedal/github
 
 ## Cost
 
-S1 is always-on (no scale-to-zero), roughly USD 0.02/hr per instance. With the default `count = 1` that is around USD 15/month. S2 is roughly USD 0.04/hr.
+Dedicated agent pools are in **public preview** and billed per vCPU per second of instance allocation. With the default `count = 1` an S1 instance (2 vCPU) is allocated continuously. Scale-to-zero is supported by the service (`az acr agentpool update --count 0`) but is not automated by this submodule. Check the current rate on the [ACR pricing page](https://azure.microsoft.com/en-us/pricing/details/container-registry/) under "Dedicated agent pool billing" before committing to a tier.
+
+Tiers: **S1** (2 vCPU, 3 GB), **S2** (4 vCPU, 8 GB), **S3** (8 vCPU, 16 GB), **I6** isolated (64 vCPU, 216 GB).
 
 ## Why this exists as a separate submodule
 
-The platform module ships ACR with `publicNetworkAccess = Disabled`. The Microsoft-managed shared ACR Tasks pool is rejected at the registry data plane even with `networkRuleBypassAllowedForTasks = true` set on the registry (verified May 2026). A dedicated VNet-joined agent pool is the only validated `az acr build` path against this posture.
+The platform module ships ACR with `publicNetworkAccess = Disabled`. When the registry's public endpoint is fully disabled, the Microsoft-managed shared ACR Tasks pool has no path to the registry data plane: the "allow trusted Azure services" bypass (`networkRuleBypassOptions = AzureServices`) only relaxes the firewall ACL when public access is set to "Selected networks", not when it is disabled outright. A dedicated VNet-joined agent pool resolving the registry through its Private Endpoint is the validated `az acr build` path against this posture.
 
 This is shipped as a separate submodule in the cookbook (not as part of the platform module) so customers using in-runner Buildah or any other build pattern do not get an always-on agent pool they did not ask for.
