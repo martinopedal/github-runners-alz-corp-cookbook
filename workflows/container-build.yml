@@ -1,0 +1,64 @@
+# Example: build and push a container image via a dedicated ACR agent pool
+#
+# Uses the runner UAMI to authenticate against ACR. No Docker daemon required
+# on the runner. `az acr build` ships the build context to ACR; with
+# `--agent-pool <vnet-pool>` the build runs inside your VNet, reaches the
+# registry over its Private Endpoint, and authenticates as the runner UAMI.
+#
+# Prerequisites:
+#   - The runner UAMI has AcrPush on the target ACR. Deploy this module with
+#     `runner_acr_push_enabled = true` to grant it on the registry the module
+#     creates. For an external registry, assign the role yourself.
+#   - A dedicated ACR agent pool (S1 or higher) joined to a subnet in the
+#     same VNet as the registry. The Microsoft-managed shared task pool is
+#     blocked at the registry data plane against this module's private
+#     posture, even with `networkRuleBypassAllowedForTasks = true` set
+#     (verified May 2026). See the README section
+#     "Building images against the private ACR".
+#   - The runner can reach the ACR data plane (private endpoint reachable).
+#
+# SECURITY: Before adopting in production, pin every `uses:` reference to a
+# commit SHA, e.g. `actions/checkout@de0fac2...  # v6.0.2`. The tags below are
+# kept for readability of this example only.
+#
+# Place this file under .github/workflows/ in your application repo.
+
+name: build-and-push
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'app/**'
+      - '.github/workflows/build-and-push.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  build:
+    # Match the labels you have configured on the runner queue.
+    runs-on: [self-hosted, linux, alz-corp]
+
+    env:
+      ACR_NAME: acrteamcentral
+      ACR_AGENT_POOL: vnetpool
+      IMAGE_REPO: teamx/hello-python
+      IMAGE_TAG: ${{ github.sha }}
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Azure login (managed identity)
+        run: az login --identity --allow-no-subscriptions
+
+      - name: Build and push via dedicated ACR agent pool
+        run: |
+          az acr build \
+            --registry "$ACR_NAME" \
+            --agent-pool "$ACR_AGENT_POOL" \
+            --image "$IMAGE_REPO:$IMAGE_TAG" \
+            --image "$IMAGE_REPO:latest" \
+            --file app/Dockerfile \
+            app
