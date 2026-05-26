@@ -1,14 +1,14 @@
-output "agent_pool_name" {
-  description = "Name of the agent pool. Pass to `az acr build --agent-pool <name>` from workflows."
-  value       = azapi_resource.agent_pool.name
+output "name" {
+  description = "The name of the agent pool. Pass to `az acr build --agent-pool <name>` from workflows."
+  value       = azapi_resource.this.name
 }
 
-output "agent_pool_resource_id" {
-  description = "Resource ID of the agent pool."
-  value       = azapi_resource.agent_pool.id
+output "resource" {
+  description = "The full resource object of the agent pool."
+  value       = azapi_resource.this
 }
 
-output "subnet_id" {
-  description = "Resource ID of the subnet created for the agent pool."
-  value       = azurerm_subnet.agent_pool.id
+output "resource_id" {
+  description = "The resource ID of the agent pool."
+  value       = azapi_resource.this.id
 }

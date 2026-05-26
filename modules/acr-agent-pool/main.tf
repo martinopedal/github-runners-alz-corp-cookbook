@@ -1,33 +1,27 @@
-locals {
-  vnet_parts = split("/", var.virtual_network_resource_id)
-  vnet_rg    = local.vnet_parts[4]
-  vnet_name  = local.vnet_parts[length(local.vnet_parts) - 1]
-}
-
-resource "azurerm_subnet" "agent_pool" {
-  name                              = var.subnet_name
-  resource_group_name               = local.vnet_rg
-  virtual_network_name              = local.vnet_name
-  address_prefixes                  = var.subnet_address_prefixes
-  private_endpoint_network_policies = "Disabled"
-}
-
-resource "azapi_resource" "agent_pool" {
+resource "azapi_resource" "this" {
   type      = "Microsoft.ContainerRegistry/registries/agentPools@2019-06-01-preview"
-  name      = var.agent_pool_name
+  name      = var.name
   location  = var.location
   parent_id = var.container_registry_resource_id
+  tags      = var.tags
 
   body = {
     properties = {
-      count                          = var.agent_pool_count
-      tier                           = var.agent_pool_tier
+      count                          = var.count_instances
+      tier                           = var.tier
       os                             = "Linux"
-      virtualNetworkSubnetResourceId = azurerm_subnet.agent_pool.id
+      virtualNetworkSubnetResourceId = var.virtual_network_subnet_resource_id
     }
   }
 
-  tags = var.tags
+  response_export_values = ["id", "name", "properties.provisioningState"]
+}
 
-  response_export_values = ["properties.provisioningState"]
+resource "azurerm_management_lock" "this" {
+  count = var.lock != null ? 1 : 0
+
+  lock_level = var.lock.kind
+  name       = coalesce(var.lock.name, "lock-${var.lock.kind}")
+  scope      = azapi_resource.this.id
+  notes      = var.lock.kind == "CanNotDelete" ? "Cannot delete the resource or its child resources." : "Cannot delete or modify the resource or its child resources."
 }
