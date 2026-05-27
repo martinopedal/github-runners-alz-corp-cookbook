@@ -12,6 +12,8 @@ Everything here is validated against the private posture the module ships by def
 | --- | --- | --- |
 | Build images and push to private ACR | [`patterns/acr-build.md`](./patterns/acr-build.md) | The two validated paths (VNet-joined ACR agent pool and in-runner Buildah), and why the shared ACR Tasks pool is not a working option. |
 | Container build workflow | [`workflows/container-build.yml`](./workflows/container-build.yml) | Drop-in `.github/workflows/container-build.yml` using `az acr build --agent-pool`. |
+| Fork-safe runner selection | [`recipes/public-repo-fork-security.md`](./recipes/public-repo-fork-security.md) | Reusable workflow pattern that routes untrusted fork PRs to GitHub-hosted runners while keeping maintainer code on self-hosted infrastructure. |
+| Decide runner (reusable workflow) | [`.github/workflows/decide-runner.yml`](./.github/workflows/decide-runner.yml) | Workflow you call from your jobs. Returns safe runner labels based on PR source and labels. |
 
 ## Prerequisites
 
