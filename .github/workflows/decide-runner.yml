@@ -1,0 +1,73 @@
+name: Decide Runner
+
+on:
+  workflow_call:
+    inputs:
+      self-hosted-labels:
+        description: 'JSON array of labels for self-hosted runners'
+        required: false
+        type: string
+        default: '["self-hosted", "personal", "pub", "linux"]'
+      fallback-runner:
+        description: 'Runner to use for untrusted PRs'
+        required: false
+        type: string
+        default: 'ubuntu-latest'
+      safe-label:
+        description: 'Label that allows fork PRs to use self-hosted runners'
+        required: false
+        type: string
+        default: 'safe-to-test-on-self-hosted'
+    outputs:
+      runner-labels:
+        description: 'JSON array of runner labels to use'
+        value: ${{ jobs.decide.outputs.runner-labels }}
+
+jobs:
+  decide:
+    runs-on: ubuntu-latest
+    outputs:
+      runner-labels: ${{ steps.decide.outputs.runner-labels }}
+    steps:
+      - name: Decide runner
+        id: decide
+        run: |
+          # Security-first runner decision logic
+          # TRUSTED contexts (use self-hosted):
+          #   - Push events (maintainer direct push)
+          #   - PRs from same repo (not a fork)
+          #   - Fork PRs with safe-label applied by maintainer
+          # UNTRUSTED contexts (use GitHub-hosted):
+          #   - Fork PRs without safe-label
+          
+          SELF_HOSTED='${{ inputs.self-hosted-labels }}'
+          FALLBACK='${{ inputs.fallback-runner }}'
+          SAFE_LABEL='${{ inputs.safe-label }}'
+          
+          EVENT_NAME='${{ github.event_name }}'
+          HEAD_REPO='${{ github.event.pull_request.head.repo.full_name }}'
+          BASE_REPO='${{ github.repository }}'
+          
+          # Check if PR has safe-label
+          HAS_SAFE_LABEL=false
+          if [[ "$EVENT_NAME" == "pull_request" ]] || [[ "$EVENT_NAME" == "pull_request_target" ]]; then
+            LABELS='${{ toJSON(github.event.pull_request.labels.*.name) }}'
+            if echo "$LABELS" | grep -q "\"$SAFE_LABEL\""; then
+              HAS_SAFE_LABEL=true
+            fi
+          fi
+          
+          # Decision logic
+          if [[ "$EVENT_NAME" == "push" ]]; then
+            echo "runner-labels=$SELF_HOSTED" >> $GITHUB_OUTPUT
+            echo "✓ TRUSTED: push event → self-hosted"
+          elif [[ "$EVENT_NAME" == "pull_request" ]] && [[ "$HEAD_REPO" == "$BASE_REPO" ]]; then
+            echo "runner-labels=$SELF_HOSTED" >> $GITHUB_OUTPUT
+            echo "✓ TRUSTED: PR from same repo → self-hosted"
+          elif [[ "$HAS_SAFE_LABEL" == "true" ]]; then
+            echo "runner-labels=$SELF_HOSTED" >> $GITHUB_OUTPUT
+            echo "⚠ TRUSTED: fork PR with $SAFE_LABEL → self-hosted (maintainer override)"
+          else
+            echo "runner-labels=[\"$FALLBACK\"]" >> $GITHUB_OUTPUT
+            echo "⚠ UNTRUSTED: fork PR without $SAFE_LABEL → $FALLBACK"
+          fi
