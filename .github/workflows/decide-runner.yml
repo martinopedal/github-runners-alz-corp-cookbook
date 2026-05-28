@@ -39,15 +39,15 @@ jobs:
           #   - Fork PRs with safe-label applied by maintainer
           # UNTRUSTED contexts (use GitHub-hosted):
           #   - Fork PRs without safe-label
-          
+
           SELF_HOSTED='${{ inputs.self-hosted-labels }}'
           FALLBACK='${{ inputs.fallback-runner }}'
           SAFE_LABEL='${{ inputs.safe-label }}'
-          
+
           EVENT_NAME='${{ github.event_name }}'
           HEAD_REPO='${{ github.event.pull_request.head.repo.full_name }}'
           BASE_REPO='${{ github.repository }}'
-          
+
           # Check if PR has safe-label
           HAS_SAFE_LABEL=false
           if [[ "$EVENT_NAME" == "pull_request" ]] || [[ "$EVENT_NAME" == "pull_request_target" ]]; then
@@ -56,7 +56,7 @@ jobs:
               HAS_SAFE_LABEL=true
             fi
           fi
-          
+
           # Decision logic
           if [[ "$EVENT_NAME" == "push" ]]; then
             echo "runner-labels=$SELF_HOSTED" >> $GITHUB_OUTPUT
