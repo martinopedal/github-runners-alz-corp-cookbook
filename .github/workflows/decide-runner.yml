@@ -7,7 +7,7 @@ on:
         description: 'JSON array of labels for self-hosted runners'
         required: false
         type: string
-        default: '["self-hosted", "personal", "pub", "linux"]'
+        default: '["self-hosted", "public-linux"]'
       fallback-runner:
         description: 'Runner to use for untrusted PRs'
         required: false
