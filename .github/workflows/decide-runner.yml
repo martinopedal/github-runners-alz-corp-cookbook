@@ -4,10 +4,9 @@ on:
   workflow_call:
     inputs:
       self-hosted-labels:
-        description: 'JSON array of labels for self-hosted runners'
-        required: false
+        description: 'JSON array of labels for self-hosted runners. Required - no default to prevent silent wrong-pool routing. Use ["self-hosted","public-linux"] for public repos, ["self-hosted","personal-linux"] for private repos.'
+        required: true
         type: string
-        default: '["self-hosted", "public-linux"]'
       fallback-runner:
         description: 'Runner to use for untrusted PRs'
         required: false
