@@ -1,0 +1,14 @@
+# Normalize line endings: prevent CRLF/LF flips on Windows checkouts
+* text=auto eol=lf
+*.ps1 text eol=lf
+*.psm1 text eol=lf
+*.yml text eol=lf
+*.yaml text eol=lf
+*.md text eol=lf
+*.json text eol=lf
+*.sh text eol=lf
+# Binary assets
+*.png binary
+*.jpg binary
+*.gif binary
+*.ico binary
